@@ -15,7 +15,7 @@ class Model(ABC):
         query: Query,
         params: Optional[Dict[str, torch.Tensor]] = None,
         options: Optional[Dict[str, Any]] = None,
-    ) -> AttrDict[str, Any]:
+    ):
         """
         Predict an attribute given position
         """
@@ -26,7 +26,7 @@ class Model(ABC):
         query_batch_size: int = 4096,
         params: Optional[Dict[str, torch.Tensor]] = None,
         options: Optional[Dict[str, Any]] = None,
-    ) -> AttrDict[str, Any]:
+    ):
         if not query.position.numel():
             # Avoid torch.cat() of zero tensors.
             return self(query, params=params, options=options)
