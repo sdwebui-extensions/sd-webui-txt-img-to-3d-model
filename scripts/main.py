@@ -25,6 +25,10 @@ from shap_e.util.notebooks import create_pan_cameras, decode_latent_images, gif_
 from shap_e.util.notebooks import decode_latent_mesh
 from shap_e.util.image_util import load_image
 import glob
+from modules import shared, api
+from fastapi import FastAPI
+import requests
+import base64
 
 class Script(scripts.Script):
     def __init__(self) -> None:
@@ -46,6 +50,43 @@ def generate(mode, batch_size, prompt, use_karras, karras_steps, init_image, cli
     print("mode:" + mode)
     print("clip_denoised:" + str(clip_denoised))
     print("use_fp16:" + str(use_fp16))
+    current_path = os.path.abspath(__file__)
+
+    parent_path = os.path.dirname(current_path)
+
+    parent_path = os.path.dirname(parent_path)
+
+    output_dir = os.path.join(parent_path, 'outputs')
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    timestamp = int(time.time())
+
+    try:
+        output_format = opts.txtimg_to_3d_model_output_format
+    except:
+        output_format = 'obj'
+
+    try:
+        output_prefix = opts.txtimg_to_3d_model_output_prefix
+    except:
+        output_prefix = 'mesh'
+    if shared.cmd_opts.just_ui:
+        server_path = shared.cmd_opts.server_path
+        data = requests.post(os.path.join(server_path, 'txt3d/generate'), json={
+            "mode": mode, "batch_size": batch_size, "prompt": prompt, "use_karras": use_karras, "karras_steps": karras_steps, 
+            "init_image": shared.encode_image_to_base64(init_image) if init_image else None, "clip_denoised": clip_denoised, 
+            "use_fp16": use_fp16, "guidance_scale": guidance_scale, "s_churn": s_churn
+        })
+        if data.status_code != 200:
+            raise Exception(data.text)
+        infos = json.loads(data.text)
+        for info in infos['datas']:
+            output_file_path = info['filepath']
+            with open(output_file_path, 'wb') as f:
+                f.write(base64.b64decode(info['content']))
+        return output_file_path
+
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -80,28 +121,6 @@ def generate(mode, batch_size, prompt, use_karras, karras_steps, init_image, cli
     )
 
     print("sample_latents done")
-
-    current_path = os.path.abspath(__file__)
-
-    parent_path = os.path.dirname(current_path)
-
-    parent_path = os.path.dirname(parent_path)
-
-    output_dir = os.path.join(parent_path, 'outputs')
-
-    os.makedirs(output_dir, exist_ok=True)
-
-    timestamp = int(time.time())
-
-    try:
-        output_format = opts.txtimg_to_3d_model_output_format
-    except:
-        output_format = 'obj'
-
-    try:
-        output_prefix = opts.txtimg_to_3d_model_output_prefix
-    except:
-        output_prefix = 'mesh'
 
     for i, latent in enumerate(latents):
         output_file_path = os.path.join(output_dir, f'{output_prefix}_{timestamp}_{i}.{output_format}')
@@ -258,6 +277,32 @@ def on_ui_settings():
         "obj", "Output format (Only obj format can preview on the page)", gr.Radio, {"choices": ['obj', 'ply']}, section=section))
     shared.opts.add_option("txtimg_to_3d_model_output_prefix", shared.OptionInfo(
         "mesh", "Out Prefix", None, section=section))
+    
+def txt3d_api(_: gr.Blocks, app: FastAPI):
+    @app.post("/txt3d/generate")
+    def txt3d_generate(req: dict):
+        init_image = req['init_image']
+        if init_image is not None:
+            init_image = api.api.decode_base64_to_image(init_image)
+        filepath = generate(req['mode'], req['batch_size'], req['prompt'], req['use_karras'], req['karras_steps'], init_image, 
+                        req['clip_denoised'], req['use_fp16'], req['guidance_scale'], req['s_churn'])
+        head = '_'.join(filepath.split('_')[:-1])
+        index = int(filepath.split('_')[-1].split('.')[0])
+        tail = filepath.split('.')[-1]
+        result = {'datas': []}
+        for _index in range(index):
+            filepath = f'{head}_{_index}.{tail}'
+            with open(filepath, 'rb') as f1:
+                b64_str = base64.b64encode(f1.read()).decode('utf-8')
+            tmp = {'filepath': filepath, 'content': b64_str}
+            result['datas'].append(tmp)
+        return result
+
+
 
 script_callbacks.on_ui_settings(on_ui_settings)
 script_callbacks.on_ui_tabs(on_ui_tabs)
+try:
+    script_callbacks.on_app_started(txt3d_api)
+except Exception as e:
+    print(e)
