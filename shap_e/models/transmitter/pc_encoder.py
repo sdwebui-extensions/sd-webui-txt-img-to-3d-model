@@ -292,7 +292,7 @@ class PointCloudPerceiverEncoder(PerceiverEncoder):
         return sample_pcl_fps(points, data_ctx=self.data_ctx, method=self.fps_method)
 
     def get_pcl_dataset(
-        self, batch: AttrDict, options: Optional[AttrDict[str, Any]] = None
+        self, batch: AttrDict, options: Optional[AttrDict] = None
     ) -> Iterable:
         _ = options
         dataset_emb = self.input_proj(batch.points.permute(0, 2, 1))  # NCL -> NLC
