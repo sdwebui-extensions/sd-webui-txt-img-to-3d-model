@@ -30,7 +30,7 @@ class MLPDensitySDFModel(MLPModel):
         query: Query,
         params: Optional[Dict[str, torch.Tensor]] = None,
         options: Optional[Dict[str, Any]] = None,
-    ) -> AttrDict[str, Any]:
+    ):
         # query.direction is None typically for SDF models and training
         h, _h_directionless = self._mlp(
             query.position, query.direction, params=params, options=options
@@ -84,7 +84,7 @@ class MLPNeRSTFModel(MLPModel):
         query: Query,
         params: Optional[Dict[str, torch.Tensor]] = None,
         options: Optional[Dict[str, Any]] = None,
-    ) -> AttrDict[str, Any]:
+    ):
         options = AttrDict() if options is None else AttrDict(options)
         h, h_directionless = self._mlp(
             query.position, query.direction, params=params, options=options
@@ -111,14 +111,14 @@ class MLPNeRSTFModel(MLPModel):
         )
 
 
-IndexMapping = AttrDict[str, Tuple[int, int]]
+IndexMapping = AttrDict
 
 
 def indices_for_output_mode(
     direction_dependent_shape: bool,
     separate_nerf_channels: bool,
     separate_coarse_channels: bool,
-) -> Tuple[IndexMapping, IndexMapping]:
+):
     """
     Get output mappings for (h, h_directionless).
     """
@@ -165,9 +165,9 @@ def indices_for_output_mode(
     return h_map, h_directionless_map
 
 
-def map_indices_to_keys(mapping: IndexMapping, data: torch.Tensor) -> AttrDict[str, torch.Tensor]:
+def map_indices_to_keys(mapping, data: torch.Tensor):
     return AttrDict({k: data[..., start:end] for k, (start, end) in mapping.items()})
 
 
-def index_mapping_max(mapping: IndexMapping) -> int:
+def index_mapping_max(mapping) -> int:
     return max(end for _, (_, end) in mapping.items())
