@@ -28,7 +28,7 @@ class STFRendererBase(ABC):
         self,
         position: torch.Tensor,
         params: Dict[str, torch.Tensor],
-        options: AttrDict[str, Any],
+        options: AttrDict,
     ) -> torch.Tensor:
         pass
 
@@ -37,7 +37,7 @@ class STFRendererBase(ABC):
         self,
         position: torch.Tensor,
         params: Dict[str, torch.Tensor],
-        options: AttrDict[str, Any],
+        options: AttrDict,
     ) -> torch.Tensor:
         pass
 
@@ -78,7 +78,7 @@ class STFRenderer(Renderer, STFRendererBase):
         batch: Dict,
         params: Optional[Dict] = None,
         options: Optional[Dict] = None,
-    ) -> AttrDict:
+    ):
         params = self.update(params)
         options = AttrDict() if not options else AttrDict(options)
 
@@ -107,7 +107,7 @@ class STFRenderer(Renderer, STFRendererBase):
         self,
         query: Query,
         params: Dict[str, torch.Tensor],
-        options: AttrDict[str, Any],
+        options: AttrDict,
     ) -> torch.Tensor:
         return self.sdf(
             query,
@@ -119,7 +119,7 @@ class STFRenderer(Renderer, STFRendererBase):
         self,
         query: Query,
         params: Dict[str, torch.Tensor],
-        options: AttrDict[str, Any],
+        options: AttrDict,
     ) -> torch.Tensor:
         return self.tf(
             query,
@@ -130,7 +130,7 @@ class STFRenderer(Renderer, STFRendererBase):
 
 def render_views_from_stf(
     batch: Dict,
-    options: AttrDict[str, Any],
+    options: AttrDict,
     *,
     sdf_fn: Optional[Callable],
     tf_fn: Optional[Callable],
@@ -144,7 +144,7 @@ def render_views_from_stf(
     specular_color: Union[float, Tuple[float]] = 0.2,
     output_srgb: bool = False,
     device: torch.device = torch.device("cuda"),
-) -> AttrDict:
+):
     """
     :param batch: contains either ["poses", "camera"], or ["cameras"]. Can
         optionally contain any of ["height", "width", "query_batch_size"]
