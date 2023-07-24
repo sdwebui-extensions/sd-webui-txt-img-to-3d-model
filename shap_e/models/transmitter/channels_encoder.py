@@ -504,7 +504,7 @@ class PointCloudPerceiverChannelsEncoder(PerceiverChannelsEncoder):
     def get_pcl_dataset(
         self,
         batch: AttrDict,
-        options: Optional[AttrDict[str, Any]] = None,
+        options: Optional[AttrDict] = None,
         inner_batch_size: Optional[int] = None,
     ) -> Iterable:
         _ = options
